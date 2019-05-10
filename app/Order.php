@@ -30,7 +30,7 @@ class Order extends Model
         return [
             self::STATUS_PLACED => 'placed',
             self::STATUS_PENDING => 'Pending',
-            self::STATUS_DISPATCHED  => 'Dispached'
+            self::STATUS_DISPATCHED  => 'Dispatched'
         ];
     }
 

@@ -20,7 +20,7 @@ class OrderController extends Controller
         $user_id = Auth::id();
 
         $this->validate($r, [
-            'address' => 'string|max:255|min:2',
+            'address' => 'required|string|max:255|min:2',
             'delivery_date' => 'required|date|after:yesterday',
         ]);
         $order = Order::create([
@@ -31,6 +31,33 @@ class OrderController extends Controller
             'delivery_time' => $r->delivery_time,
         ]);
 
+        $this->sendNotification($r->device_token, 'Your order has been recorded and is waiting for it to be verified by the admin','Order Placed');
+        $data = new OrderResource($order);
+        return $this->responser($order, $data, 'Items Ordered Successfully');
+    }
+
+    public function orderList(){
+        $orders = Order::latest()->where('status', '!=', 2)->get();
+        $data = OrderResource::collection($orders);
+        return $this->responser($orders, $data, 'Lastest Orders are listed');
+    }
+
+    public function verifyOrder(Request $r, $id){
+        $order = Order::find($id);
+        $order->status = 1;
+        $order->save();
+
+        $this->sendNotification($r->device_token, 'Your order has been verified by the admin and is one the way to be delivered','Order Pending');
+        $data = new OrderResource($order);
+        return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
+    }
+
+    public function orderDelivered(Request $r, $id){
+        $order = Order::find($id);
+        $order->status = 2;
+        $order->save();
+
+        $user_id = $order->user_id;
         $user = Inventory::where('user_id', $user_id)->first();
         if(!$user){
             Inventory::create([
@@ -44,8 +71,8 @@ class OrderController extends Controller
             $user->save();
         }
 
-        $this->sendNotification($r->device_token, 'Your order has been recorded and is waiting for it to be verified by the admin','Order Pending');
+        $this->sendNotification($r->device_token, 'Your order has been Delivered','Order Delivered');
         $data = new OrderResource($order);
-        return $this->responser($order, $data, 'Items Ordered Successfully');
+        return $this->responser($order, $data, 'Order Has been successfully delivered to the customer');
     }
 }

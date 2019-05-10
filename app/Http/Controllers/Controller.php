@@ -13,7 +13,13 @@ class Controller extends BaseController
 
     public function responser($item, $data, $message)
     {
-        if($item){
+        if($item != null){
+            $num = $item->count();
+        } else {
+            $num = 0;
+        }
+
+        if($num > 0){
             return response()->json([
                 'data' => $data,
                 'status' => 200,

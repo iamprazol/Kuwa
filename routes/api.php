@@ -12,15 +12,24 @@ use Illuminate\Http\Request;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
- Route::post('register', 'Customer\CustomerController@register');
- Route::post('login', 'Customer\CustomerController@authenticate');
+ Route::post('register', 'UserController@register');
+ Route::post('login', 'UserController@authenticate');
 
  Route::group(['middleware' => ['jwt.verify']], function() {
-     Route::get('my-profile', 'Customer\CustomerController@getAuthenticatedUser');
-     Route::post('search', 'Customer\CustomerController@searchUser');
+     Route::get('my-profile', 'UserController@getAuthenticatedUser');
      Route::post('order', 'OrderController@placeOrder');
      Route::get('my-order', 'OrderController@myOrder');
      Route::get('my-inventory', 'InventoryController@myInventory');
      Route::post('remove-from-inventory', 'InventoryController@removeFromInventory');
+ });
 
+
+ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group( function () {
+     Route::get('order-list', 'OrderController@orderList');
+     Route::post('verify-order/{id}', 'OrderController@verifyOrder');
+     Route::post('deliver-order/{id}', 'OrderController@orderDelivered');
+     Route::get('inventory-list', 'InventoryController@listInventory');
+     Route::get('customers', 'UserController@customerList');
+     Route::post('search', 'UserController@searchCustomer');
+     Route::get('pending-customers', 'UserController@pendingCustomer');
  });
