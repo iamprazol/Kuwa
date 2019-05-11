@@ -16,16 +16,18 @@ class UserController extends Controller
     public function authenticate(Request $request)
     {
         $credentials = $request->only('email', 'password');
-
-        try {
-            if (! $token = JWTAuth::attempt($credentials)) {
-                return response()->json(['error' => 'invalid_credentials'], 400);
+        $user = User::where('email', $request->email)->first();
+            try {
+                if (!$token = JWTAuth::attempt($credentials)) {
+                    return response()->json(['error' => 'invalid_credentials', 'status' => 400], 400);
+                } elseif ($user->is_verified == 0){
+                    return response()->json(['error' => 'User is not verified', 'status' => 400], 400);
+                }
+            } catch (JWTException $e) {
+                return response()->json(['error' => 'could_not_create_token', 'status' => 500 ], 500);
             }
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'could_not_create_token'], 500);
-        }
 
-        return response()->json(compact('token'));
+            return response()->json(compact('token'));
     }
 
     public function register(Request $request)
@@ -51,7 +53,7 @@ class UserController extends Controller
 
         $token = JWTAuth::fromUser($user);
 
-        return response()->json(compact('user','token'),201);
+        return response()->json(['data' => $user, 'token' => $token, 'message' => 'User has been created successfully', 'status' => '201'],201);
     }
 
     public function getAuthenticatedUser()
@@ -67,11 +69,12 @@ class UserController extends Controller
         return $this->responser($user, $data, 'Users found successfully');
     }
 
-    public function edit(Request $r){
+    public function update(Request $r){
         $user = Auth::user();
-        $user->name = $r->name;
-        $user->email = $r->email;
-        $user->address = $r->address;
+        $user->update($r->all());
+
+        $data = new UserResource($user);
+        return $this->responser($user, $data, "Your details has been updated successfully");
     }
 
     public function customerList(){

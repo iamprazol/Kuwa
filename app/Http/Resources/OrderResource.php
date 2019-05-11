@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Carbon\Carbon;
 
 class OrderResource extends JsonResource
 {
@@ -21,8 +22,8 @@ class OrderResource extends JsonResource
             'user_name' => $this->user->name,
             'quantity' => $this->quantity,
             'address' => $this->address,
-            'delivery_date' => $this->delivery_date,
-            'delivery_time' => $this->delivery_time,
+            'delivery_date' => Carbon::parse($this->delivery_date)->format('d/m/Y'),
+            'delivery_time' => Carbon::parse($this->delivery_time)->format('H:i'),
             'status' => self::status()
         ];
     }
@@ -33,8 +34,10 @@ class OrderResource extends JsonResource
             return 'pending';
         } elseif($status == 1){
             return 'Dispatched';
-        } else {
+        } elseif($status == 2) {
             return 'delivered';
+        } else {
+            return 'rejected';
         }
     }
 

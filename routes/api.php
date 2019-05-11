@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 
  Route::group(['middleware' => ['jwt.verify']], function() {
      Route::get('my-profile', 'UserController@getAuthenticatedUser');
+     Route::put('profile-edit', 'UserController@update');
      Route::post('order', 'OrderController@placeOrder');
      Route::get('my-order', 'OrderController@myOrder');
      Route::get('my-inventory', 'InventoryController@myInventory');
@@ -25,9 +26,12 @@ use Illuminate\Http\Request;
 
 
  Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group( function () {
+     Route::get('my-profile', 'UserController@getAuthenticatedUser');
+     Route::put('profile-edit', 'UserController@update');
      Route::get('order-list', 'OrderController@orderList');
      Route::post('verify-order/{id}', 'OrderController@verifyOrder');
      Route::post('deliver-order/{id}', 'OrderController@orderDelivered');
+     Route::post('reject-order/{id}', 'OrderController@rejectOrder');
      Route::get('inventory-list', 'InventoryController@listInventory');
      Route::get('customers', 'UserController@customerList');
      Route::post('search', 'UserController@searchCustomer');

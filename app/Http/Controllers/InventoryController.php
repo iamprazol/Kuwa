@@ -18,16 +18,22 @@ class InventoryController extends Controller
     public function removeFromInventory(Request $r)
     {
         $inventory = Auth::user()->inventory()->first();
-        $inventory->sold = $inventory->sold + $r->quantity;
-        $inventory->save();
+        $remaining = $inventory->total - $inventory->sold;
+        if($r->quantity <= $remaining) {
+            $inventory->sold = $inventory->sold + $r->quantity;
+            $inventory->save();
 
-        if ($inventory->sold >= (75 * $inventory->total) / 100) {
-            $this->sendNotification($r->device_token, 'Your order has been Delivered', 'Order Delivered');
-            $data = new InventoryResource($inventory);
-            return $this->responser($inventory, $data, 'Item From User\'s Inventory decremented by ' . $r->quantity . ' units successfully and it has less then 75% of total jars available');
+            if ($inventory->sold >= (75 * $inventory->total) / 100) {
+                $this->sendNotification($r->device_token, 'Your order has been Delivered', 'Order Delivered');
+                $data = new InventoryResource($inventory);
+                return $this->responser($inventory, $data, 'Item From User\'s Inventory decremented by ' . $r->quantity . ' units successfully and it has less then 75% of total jars available');
+            } else {
+                $data = new InventoryResource($inventory);
+                return $this->responser($inventory, $data, 'Item From User\'s Inventory decremented by ' . $r->quantity . ' units successfully');
+            }
         } else {
             $data = new InventoryResource($inventory);
-            return $this->responser($inventory, $data, 'Item From User\'s Inventory decremented by ' . $r->quantity . ' units successfully');
+            return response()->json(['data' => $data, 'message' => 'You don\'t have enough item in the inventory', 'status' => 403], 403);
         }
     }
 
