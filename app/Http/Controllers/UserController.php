@@ -26,8 +26,8 @@ class UserController extends Controller
             } catch (JWTException $e) {
                 return response()->json(['error' => 'could_not_create_token', 'status' => 500 ], 500);
             }
-
-            return response()->json(compact('token'));
+            $data = new UserResource($user);
+            return response()->json(['data' => $data,'token' => $token, 'message' => 'Users details listed successfully', 'status' => 200], 200);
     }
 
     public function register(Request $request)
