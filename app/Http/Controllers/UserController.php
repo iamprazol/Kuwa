@@ -37,6 +37,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'required|regex:/^\+?(977)?(98)[0-9]{8}?/|max:14',
+            'firebase_token' => 'required'
         ]);
 
         if($validator->fails()){
@@ -49,12 +50,13 @@ class UserController extends Controller
             'password' => Hash::make($request->get('password')),
             'phone' => $request->phone,
             'address' => $request->address,
-            'company_name' => $request->company_name
+            'company_name' => $request->company_name,
+            'firebase_token' => $request->firebase_token
         ]);
 
         $token = JWTAuth::fromUser($user);
-
-        return response()->json(['data' => $user, 'token' => $token, 'message' => 'User has been created successfully', 'status' => '201'],201);
+        $data = new UserResource($user);
+        return response()->json(['data' => $data, 'token' => $token, 'message' => 'User has been created successfully', 'status' => '201'],201);
     }
 
     public function getAuthenticatedUser()

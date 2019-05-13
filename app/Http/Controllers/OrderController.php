@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\OrderResource as OrderResource;
+use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
@@ -30,10 +31,13 @@ class OrderController extends Controller
     public function placeOrder(Request $r){
         $user = Auth::user();
 
-        $this->validate($r, [
+        $validator = Validator::make($r->all(), [
             'delivery_date' => 'required|date|after:yesterday',
         ]);
 
+        if($validator->fails()){
+            return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
+        }
         $now = Carbon::now();
         if($r->delivery_time == 'urgent'){
             $delivery_time = $now-> addMinutes(30);
@@ -51,7 +55,7 @@ class OrderController extends Controller
             'delivery_time' => $delivery_time,
         ]);
 
-        $this->sendNotification($r->device_token, 'Your order has been recorded and is waiting for it to be verified by the admin','Order Placed');
+        $this->sendNotification($user->firebase_token, 'Your order has been recorded and is waiting for it to be verified by the admin','Order Placed');
         $data = new OrderResource($order);
         return $this->responser($order, $data, 'Items Ordered Successfully');
     }
@@ -67,7 +71,7 @@ class OrderController extends Controller
         if($order->status != 3){
             $order->status = 1;
             $order->save();
-            $this->sendNotification($r->device_token, 'Your order has been verified by the admin and is one the way to be delivered','Order Pending');
+            $this->sendNotification($order->user->firebase_token, 'Your order has been verified by the admin and is one the way to be delivered','Order Pending');
             $data = new OrderResource($order);
             return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
         } else {
@@ -95,7 +99,7 @@ class OrderController extends Controller
                 $user->save();
             }
 
-            $this->sendNotification($r->device_token, 'Your order has been Delivered', 'Order Delivered');
+            $this->sendNotification($order->user->firebase_token, 'Your order has been Delivered', 'Order Delivered');
             $data = new OrderResource($order);
             return $this->responser($order, $data, 'Order Has been successfully delivered to the customer');
 
@@ -109,7 +113,7 @@ class OrderController extends Controller
         $order->status = 3;
         $order->save();
 
-        $this->sendNotification($r->device_token, 'Your order has been rejected. Please contact us for more details.','Order Rejected');
+        $this->sendNotification($order->user->firebase_token, 'Your order has been rejected. Please contact us for more details.','Order Rejected');
         return response()->json(['message' => 'Order has been rejected Successfully', 'status' => '200'],200);
     }
 }

@@ -20,7 +20,8 @@ class UsersTableSeeder extends Seeder
             'password' => bcrypt('prajjwal123'),
             'company_name' => 'Kuwa',
             'is_verified' => 1,
-            'admin' => 1
+            'admin' => 1,
+            'firebase_token' => 'askajskajskjas'
         ];
 
         $u2 = [
@@ -31,7 +32,8 @@ class UsersTableSeeder extends Seeder
             'password' => bcrypt('prajjwal123'),
             'company_name' => 'tuuwa',
             'is_verified' => 1,
-            'admin' => 0
+            'admin' => 0,
+            'firebase_token' => 'askajskajskjas'
         ];
 
         User::create($u1);

@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'address' => $this->address,
             'phone' => $this->phone,
             'company_name' => $this->company_name,
+            'firebase_token' => $this->firebase_token,
             'is_admin' => $this->is_admin(),
             'is_verified' => $this->verified()
         ];
