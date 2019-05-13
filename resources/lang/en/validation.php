@@ -131,6 +131,10 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+        'phone' => [
+            'regex' => 'The phone number entered is not a valid number',
+            'max' => 'The phone number must not have more than 14 characters'
+        ]
     ],
 
     /*

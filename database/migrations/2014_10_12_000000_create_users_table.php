@@ -22,7 +22,7 @@ class CreateUsersTable extends Migration
             $table->string('address');
             $table->string('password');
             $table->boolean('admin')->default(0);
-            $table->boolean('is_verified')->default(0);
+            $table->boolean('is_verified')->default(1);
             $table->rememberToken();
             $table->timestamps();
         });
