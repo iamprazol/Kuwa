@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class InventoryResource extends JsonResource
+class NotificationResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,12 +17,9 @@ class InventoryResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'user_name' => $this->user->name,
-            'total_items' => $this->total,
-            'available' => $this->total - $this->sold,
-            'unavailable' => $this->sold,
-            'company_name' => $this->user->company_name,
-            'address' => $this->user->address
+            'title' => $this->title,
+            'message' => $this->message,
+            'read_status' => $this->read_status
         ];
     }
 }

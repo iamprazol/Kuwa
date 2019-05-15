@@ -9,42 +9,52 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\OrderResource as OrderResource;
 use Illuminate\Support\Facades\Validator;
+use App\Notification;
 
 class OrderController extends Controller
 {
-    public function myOrder(){
+    public function myOrder()
+    {
         $user_id = Auth::id();
         $order = Order::where('user_id', $user_id)->latest()->first();
 
-        if($order != null && $order->status != 2) {
+        if ($order != null && $order->status != 2) {
             if ($order->status == 3) {
                 return response()->json(['message' => 'Your order has been rejected', 'status' => '403'], 403);
             } else {
                 $data = new OrderResource($order);
                 return response()->json(['data' => $data, 'message' => 'Your Lastest Order is listed', 'status' => 200], 200);
             }
-        }else {
-            return response()->json(['message' => 'Orders not found', 'status' => 200],200);
+        } else {
+            return response()->json(['message' => 'Orders not found', 'status' => 200], 200);
         }
     }
 
-    public function placeOrder(Request $r){
+    public function placeOrder(Request $r)
+    {
         $user = Auth::user();
+        $now = Carbon::now();
+        $untilweek = Carbon::now()->addWeek();
 
         $validator = Validator::make($r->all(), [
-            'delivery_date' => 'required|date|after:yesterday',
+            'start_date' => 'date|after:yesterday',
+            'delivery_date' => 'required|date|after:yesterday|before:'.$untilweek,
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
         }
-        $now = Carbon::now();
-        if($r->delivery_time == 'urgent'){
-            $delivery_time = $now-> addMinutes(30);
-        } elseif($r->delivery_time == "after_hour"){
-            $delivery_time = $now->addHour();
+
+        if($r->delivery_date == Carbon::today()->toDateString()) {
+            if ($r->delivery_time == 'urgent') {
+                $delivery_time = $now->addMinutes(30);
+            } elseif ($r->delivery_time == "after_hour") {
+                $delivery_time = $now->addHour();
+            } else {
+                $delivery_time = $now->addHours(5);
+            }
         } else {
-            $delivery_time = $now->addHours(5);
+             $delivery_time = $now;
         }
 
         $order = Order::create([
@@ -55,23 +65,32 @@ class OrderController extends Controller
             'delivery_time' => $delivery_time,
         ]);
 
-        $this->sendNotification($user->firebase_token, 'Your order has been recorded and is waiting for it to be verified by the admin','Order Placed');
+        $title = 'Order Placed';
+        $message = 'Your order has been recorded and is waiting for it to be verified by the admin';
+        $this->addNotification($order, $message, $title);
+
         $data = new OrderResource($order);
         return $this->responser($order, $data, 'Items Ordered Successfully');
     }
 
-    public function orderList(){
-        $orders = Order::latest()->where('status', '!=', 2)->where('status', '!=', 3)->get();
+    public function orderList()
+    {
+        $orders = Order::latest()->where('status', 0)->get();
         $data = OrderResource::collection($orders);
         return $this->responser($orders, $data, 'Lastest Orders are listed');
     }
 
-    public function verifyOrder(Request $r, $id){
+    public function verifyOrder(Request $r, $id)
+    {
         $order = Order::find($id);
-        if($order->status != 3){
+        if ($order->status != 3) {
             $order->status = 1;
             $order->save();
-            $this->sendNotification($order->user->firebase_token, 'Your order has been verified by the admin and is one the way to be delivered','Order Pending');
+
+            $title = 'Pending';
+            $message = 'Your order has been verified by the admin and is one the way to be delivered';
+            $this->addNotification($order, $message, $title);
+
             $data = new OrderResource($order);
             return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
         } else {
@@ -79,9 +98,17 @@ class OrderController extends Controller
         }
     }
 
-    public function orderDelivered(Request $r, $id){
+    public function readyForDispatch()
+    {
+        $orders = Order::latest()->where('status', 1)->get();
+        $data = OrderResource::collection($orders);
+        return $this->responser($orders, $data, 'Orders ready to dispatched are listed');
+    }
+
+    public function orderDelivered(Request $r, $id)
+    {
         $order = Order::find($id);
-        if($order->status != 3) {
+        if ($order->status != 3) {
             $order->status = 2;
             $order->save();
 
@@ -99,7 +126,10 @@ class OrderController extends Controller
                 $user->save();
             }
 
-            $this->sendNotification($order->user->firebase_token, 'Your order has been Delivered', 'Order Delivered');
+            $title = 'Order Delivered';
+            $message = 'Your order has been Delivered';
+            $this->addNotification($order, $message, $title);
+
             $data = new OrderResource($order);
             return $this->responser($order, $data, 'Order Has been successfully delivered to the customer');
 
@@ -108,12 +138,37 @@ class OrderController extends Controller
         }
     }
 
-    public function rejectOrder(Request $r, $id){
-        $order = Order::find($id);
-        $order->status = 3;
-        $order->save();
-
-        $this->sendNotification($order->user->firebase_token, 'Your order has been rejected. Please contact us for more details.','Order Rejected');
-        return response()->json(['message' => 'Order has been rejected Successfully', 'status' => '200'],200);
+    public function deliveredList()
+    {
+        $orders = Order::latest()->where('status', 2)->get();
+        $data = OrderResource::collection($orders);
+        return $this->responser($orders, $data, 'Orders delivered are listed');
     }
+
+    public function rejectOrder(Request $r, $id)
+    {
+        $order = Order::find($id);
+        if($order) {
+            if ($order->status == 0) {
+                $order->status = 3;
+                $order->save();
+
+                $title = 'Order Rejected';
+                $message = 'Your order has been rejected. Please contact us for more details.';
+                $this->addNotification($order, $message, $title);
+                return response()->json(['message' => 'Order has been rejected Successfully', 'status' => '200'], 200);
+            } else {
+                return response()->json(['message' => 'Order has been verified already and cannot be rejected', 'status' => '403'], 403);
+            }
+        } else {
+                return response()->json(['message' => 'No Order found', 'status' => 400], 400);
+        }
+    }
+
+    public function rejectedList(){
+        $orders = Order::latest()->where('status', 3)->get();
+        $data = OrderResource::collection($orders);
+        return $this->responser($orders, $data, 'Rejected Orders are listed');
+    }
+
 }

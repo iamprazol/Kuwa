@@ -12,8 +12,8 @@ use Illuminate\Http\Request;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
- Route::post('register', 'UserController@register');
- Route::post('login', 'UserController@authenticate');
+Route::post('regi', 'UserController@regi');
+Route::post('login', 'UserController@authenticate');
 
  Route::group(['middleware' => ['jwt.verify']], function() {
      Route::get('my-profile', 'UserController@getAuthenticatedUser');
@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
      Route::get('my-order', 'OrderController@myOrder');
      Route::get('my-inventory', 'InventoryController@myInventory');
      Route::post('remove-from-inventory', 'InventoryController@removeFromInventory');
+     Route::get('my-notifications', 'NotificationController@myNotification');
  });
 
 
@@ -30,8 +31,11 @@ use Illuminate\Http\Request;
      Route::put('profile-edit', 'UserController@update');
      Route::get('order-list', 'OrderController@orderList');
      Route::post('verify-order/{id}', 'OrderController@verifyOrder');
+     Route::get('dispatch-list', 'OrderController@readyForDispatch');
      Route::post('deliver-order/{id}', 'OrderController@orderDelivered');
+     Route::get('delivered-list', 'OrderController@deliveredList');
      Route::post('reject-order/{id}', 'OrderController@rejectOrder');
+     Route::get('rejected-list', 'OrderController@rejectedList');
      Route::get('inventory-list', 'InventoryController@listInventory');
      Route::get('customers', 'UserController@customerList');
      Route::post('search', 'UserController@searchCustomer');

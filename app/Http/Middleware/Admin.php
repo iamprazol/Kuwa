@@ -18,7 +18,7 @@ class Admin
         if(auth()->user()->admin == 1) {
             return $next($request);
         } else {
-            return redirect('/my-profile');
+            return response()->json(['message' => 'You\'re not authorized to access this route', 'status' => 401], 401);
         }
     }
 }

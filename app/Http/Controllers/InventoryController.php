@@ -25,7 +25,11 @@ class InventoryController extends Controller
             $inventory->save();
 
             if ($inventory->sold >= (75 * $inventory->total) / 100) {
-                $this->sendNotification($firebase_token, 'Your order has been Delivered', 'Order Delivered');
+
+                $title = 'Inventory being empited';
+                $message = 'Your Inventory is about to be empited';
+                $this->addNotification($inventory, $message, $title);
+
                 $data = new InventoryResource($inventory);
                 return $this->responser($inventory, $data, 'Item From User\'s Inventory decremented by ' . $r->quantity . ' units successfully and it has less then 75% of total jars available');
             } else {
@@ -39,7 +43,7 @@ class InventoryController extends Controller
     }
 
     public function listInventory(){
-        $inventory = Inventory::paginate(15);
+        $inventory = Inventory::get();
         $data = InventoryResource::collection($inventory);
         return $this->responser($inventory, $data, 'All User\'s Inventory Listed successfully');
     }

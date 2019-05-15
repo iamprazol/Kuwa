@@ -30,7 +30,7 @@ class UserController extends Controller
             return response()->json(['data' => $data,'token' => $token, 'message' => 'Users details listed successfully', 'status' => 200], 200);
     }
 
-    public function register(Request $request)
+    public function regi(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|min:2',
@@ -81,13 +81,13 @@ class UserController extends Controller
     }
 
     public function customerList(){
-        $customers = User::where('admin', 0)->orderBy('name', 'asc')->paginate(15);
+        $customers = User::where('admin', 0)->orderBy('name', 'asc')->get();
         $data = UserResource::collection($customers);
         return $this->responser($customers, $data, 'Customers Listed Successfully');
     }
 
     public function pendingCustomer(){
-        $pending = User::where(['admin'=> 0, 'is_verified' => 0])->paginate(15);
+        $pending = User::where(['admin'=> 0, 'is_verified' => 0])->get();
         $data = UserResource::collection($pending);
         return $this->responser($pending, $data, 'Customers Pending To Be Verified Listed Successfully');
     }

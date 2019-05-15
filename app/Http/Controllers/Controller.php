@@ -6,6 +6,7 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Notification;
 
 class Controller extends BaseController
 {
@@ -72,5 +73,16 @@ class Controller extends BaseController
             return $result;
         else
             return $result;
+    }
+
+    public function addNotification($item, $message, $title){
+        Notification::create([
+            'user_id' => $item->user_id,
+            'message' => $message,
+            'title' => $title,
+        ]);
+
+        return $this->sendNotification($item->user->firebase_token, $message, $title);
+
     }
 }
