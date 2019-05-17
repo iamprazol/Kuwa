@@ -38,30 +38,38 @@ class OrderController extends Controller
 
         $validator = Validator::make($r->all(), [
             'start_date' => 'date|after:yesterday',
-            'delivery_date' => 'required|date|after:yesterday|before:'.$untilweek,
+            'delivery_date' => 'date|after:yesterday|before:'.$untilweek,
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
         }
 
-        if($r->delivery_date == Carbon::today()->toDateString()) {
+        $today = Carbon::now()->today()->toDateString();
+
+        if(isset($r->delivery_date)){
+            if($r->delivery_date > $today){
+                $delivery_date = $r->delivery_date;
+                $delivery_time = null;
+            } else {
+                return response()->json(['message' => 'You have to choose a time for delivery at current date', 'status' => 403], 403);
+            }
+        } else {
+            $delivery_date = null;
             if ($r->delivery_time == 'urgent') {
                 $delivery_time = $now->addMinutes(30);
             } elseif ($r->delivery_time == "after_hour") {
-                $delivery_time = $now->addHour();
-            } else {
-                $delivery_time = $now->addHours(5);
+                $delivery_time = Carbon::parse('1 pm')->format('H:i');
+            } elseif ($r->delivery_time == "after_hours") {
+                $delivery_time = Carbon::parse('5 pm')->format('H:i');
             }
-        } else {
-             $delivery_time = $now;
         }
 
         $order = Order::create([
             'user_id' => $user->id,
             'address' => $user->address,
             'quantity' => $r->quantity,
-            'delivery_date' => $r->delivery_date,
+            'delivery_date' => $delivery_date,
             'delivery_time' => $delivery_time,
         ]);
 
@@ -77,7 +85,7 @@ class OrderController extends Controller
     {
         $orders = Order::latest()->where('status', 0)->get();
         $data = OrderResource::collection($orders);
-        return $this->responser($orders, $data, 'Lastest Orders are listed');
+        return $this->responser($orders, $data, 'Latest Orders are listed');
     }
 
     public function verifyOrder(Request $r, $id)
@@ -87,7 +95,7 @@ class OrderController extends Controller
             $order->status = 1;
             $order->save();
 
-            $title = 'Pending';
+            $title = 'Order ready for dispatch';
             $message = 'Your order has been verified by the admin and is one the way to be delivered';
             $this->addNotification($order, $message, $title);
 

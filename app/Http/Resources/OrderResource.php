@@ -22,8 +22,8 @@ class OrderResource extends JsonResource
             'user_name' => $this->user->name,
             'quantity' => $this->quantity,
             'address' => $this->address,
-            'delivery_date' => Carbon::parse($this->delivery_date)->format('d/m/Y'),
-            'delivery_time' => Carbon::parse($this->delivery_time)->format('H:i'),
+            'delivery_date' => $this->delivery_date(),
+            'delivery_time' => $this->delivery_time(),
             'status' => self::status()
         ];
     }
@@ -38,6 +38,22 @@ class OrderResource extends JsonResource
             return 'delivered';
         } else {
             return 'rejected';
+        }
+    }
+
+    public function delivery_date(){
+        if($this->delivery_date == null){
+            return null;
+        } else {
+            return Carbon::parse($this->delivery_date)->format('d/m/Y');
+        }
+    }
+
+    public function delivery_time(){
+        if($this->delivery_time == null){
+            return null;
+        } else {
+            return Carbon::parse($this->delivery_time)->format('H:i');
         }
     }
 
