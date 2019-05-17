@@ -18,7 +18,6 @@ class InventoryController extends Controller
     public function removeFromInventory(Request $r)
     {
         $inventory = Auth::user()->inventory()->first();
-        $firebase_token = Auth::user()->firebase_token;
         $remaining = $inventory->total - $inventory->sold;
         if($r->quantity <= $remaining) {
             $inventory->sold = $inventory->sold + $r->quantity;
@@ -46,5 +45,28 @@ class InventoryController extends Controller
         $inventory = Inventory::get();
         $data = InventoryResource::collection($inventory);
         return $this->responser($inventory, $data, 'All User\'s Inventory Listed successfully');
+    }
+
+    public function adminInventory(Request $r){
+        $inventory = Auth::user()->inventory()->first();
+        if (!$inventory) {
+            $inventory = Inventory::create([
+                'user_id' => Auth::id(),
+                'total' => $r->quantity,
+            ]);
+        } else {
+            $remaining = $inventory->total - $inventory->sold;
+            $inventory->total = $remaining + $r->quantity;
+            $inventory->sold = 0;
+            $inventory->save();
+        }
+
+        $title = 'Inventory is updated';
+        $message = $r->quantity.' Items has been added to your inventory';
+        $this->addNotification($inventory, $message, $title);
+
+        $data = new InventoryResource($inventory);
+        return $this->responser($inventory, $data,  $r->quantity .'Items has been added to admin\'s inventory');
+
     }
 }

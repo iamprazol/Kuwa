@@ -40,4 +40,8 @@ Route::post('login', 'UserController@authenticate');
      Route::get('customers', 'UserController@customerList');
      Route::post('search', 'UserController@searchCustomer');
      Route::get('pending-customers', 'UserController@pendingCustomer');
+     Route::post('add-items', 'InventoryController@adminInventory');
+     Route::get('my-inventory', 'InventoryController@myInventory');
+     Route::post('remove-from-inventory', 'InventoryController@removeFromInventory');
+
  });
