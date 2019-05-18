@@ -39,7 +39,6 @@ class OrderController extends Controller
 
         $validator = Validator::make($r->all(), [
             'delivery_date' => 'date|after:yesterday|before:'.$untilweek,
-            'delivery_time' => 'date_format:H:i|before:'.Carbon::parse('5 pm')->format('H:i')
         ]);
 
         if ($validator->fails()) {
@@ -57,12 +56,16 @@ class OrderController extends Controller
             }
         } else {
             $delivery_date = null;
-            if ($r->delivery_time == "00:30") {
-                $delivery_time = $now->addMinutes(30);
-            } elseif ($r->delivery_time == "13:00") {
-                $delivery_time = Carbon::parse('1 pm')->format('H:i');
-            } elseif ($r->delivery_time == "17:00") {
-                $delivery_time = Carbon::parse('5 pm')->format('H:i');
+            if($now->format('H:i') <= Carbon::parse('5 pm')->format('H:i')) {
+                if ($r->delivery_time == "urgent") {
+                    $delivery_time = $now->addMinutes(30);
+                } elseif ($r->delivery_time == "after_hour") {
+                    $delivery_time = Carbon::parse('1 pm')->format('H:i');
+                } elseif ($r->delivery_time == "after_hours") {
+                    $delivery_time = Carbon::parse('5 pm')->format('H:i');
+                }
+            } else {
+                return response()->json(['message' => 'Ordering time for today is over. Please select tomorrow\'s date for delivery', 'status' => 403], 403);
             }
         }
 
@@ -92,24 +95,28 @@ class OrderController extends Controller
     public function verifyOrder(Request $r, $id)
     {
         $inventory = Auth::user()->inventory->first();
-        $remaining = $inventory->total - $inventory->sold;
-        $order = Order::find($id);
-        if($order->quantity < $remaining){
-            if ($order->status != 3) {
-                $order->status = 1;
-                $order->save();
+        if($inventory) {
+            $remaining = $inventory->total - $inventory->sold;
+            $order = Order::find($id);
+            if ($order->quantity < $remaining) {
+                if ($order->status != 3) {
+                    $order->status = 1;
+                    $order->save();
 
-                $title = 'Order ready for dispatch';
-                $message = 'Your order has been verified by the admin and is one the way to be delivered';
-                $this->addNotification($order, $message, $title);
+                    $title = 'Order ready for dispatch';
+                    $message = 'Your order has been verified by the admin and is one the way to be delivered';
+                    $this->addNotification($order, $message, $title);
 
-                $data = new OrderResource($order);
-                return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
+                    $data = new OrderResource($order);
+                    return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
+                } else {
+                    return response()->json(['message' => 'Order has already been rejected', 'status' => 403], 403);
+                }
             } else {
-                return response()->json(['message' => 'Order has already been rejected', 'status' => 403], 403);
+                return response()->json(['message' => 'You don\'t have enough item in the inventory to verify this order', 'status' => 403], 403);
             }
         } else {
-            return response()->json(['message' => 'You don\'t have enough item in the inventory to verify this order', 'status' => 403], 403);
+            return response()->json(['message' => 'You don\'t have an inventory. So first create an inventory and add items in it', 'status' => 403], 403);
         }
     }
 

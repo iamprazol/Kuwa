@@ -23,7 +23,8 @@ class UserResource extends JsonResource
             'company_name' => $this->company_name,
             'firebase_token' => $this->firebase_token,
             'is_admin' => $this->is_admin(),
-            'is_verified' => $this->verified()
+            'is_verified' => $this->verified(),
+            'available' => $this->available()
         ];
     }
 
@@ -42,6 +43,16 @@ class UserResource extends JsonResource
             return 'Customer';
         } else {
             return 'Admin';
+        }
+    }
+
+    public function available(){
+        $inventory = $this->inventory->first();
+        if($inventory == null){
+            return null;
+        } else {
+            $remaining = $inventory->total - $inventory->sold;
+            return $remaining;
         }
     }
 }
