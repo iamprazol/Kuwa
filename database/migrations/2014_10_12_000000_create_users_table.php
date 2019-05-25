@@ -23,7 +23,8 @@ class CreateUsersTable extends Migration
             $table->string('password');
             $table->string('firebase_token', 512);
             $table->boolean('admin')->default(0);
-            $table->boolean('is_verified')->default(1);
+            $table->string('code')->nullable();
+            $table->boolean('is_verified')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -84,5 +85,52 @@ class Controller extends BaseController
 
         return $this->sendNotification($item->user->firebase_token, $message, $title);
 
+    }
+
+
+    public function getOtp($user){
+        $code = rand(10000, 99999);
+        $api_url = "http://api.sparrowsms.com/v2/sms/?".
+            http_build_query(array(
+                'token' => 'W9mxiMTWaRQUiMf7YQJA',
+                'from'  => 'Demo',
+                'to'    => $user->phone,
+                'text'  => 'This is your verification code for activating kuwa account 
+                            Code: '.$code));
+
+        $curl_handle=curl_init();
+        curl_setopt($curl_handle, CURLOPT_URL,$api_url);
+        curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 2);
+        curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl_handle, CURLOPT_USERAGENT, 'Kuwa');
+        $query = curl_exec($curl_handle);
+        curl_close($curl_handle);
+
+        $user->code = $code;
+        $user->save();
+    }
+
+    public function sendOtp(Request $request){
+        $phone = $request->phone;
+
+        $args = http_build_query(array(
+            'token' => 'xwu5onGreNPXp3dOCQJo',
+            'from'  => 'Kuwa',
+            'to'    => $phone,
+            'text'  => 'This is your verification code'));
+
+        $url = "http://api.sparrowsms.com/v2/sms/";
+
+        # Make the call using API.
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS,$args);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // Response
+        $response = curl_exec($ch);
+        $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
     }
 }

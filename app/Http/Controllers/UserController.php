@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -53,10 +54,82 @@ class UserController extends Controller
             'company_name' => $request->company_name,
             'firebase_token' => $request->firebase_token
         ]);
+        $this->getOtp($user);
 
         $token = JWTAuth::fromUser($user);
         $data = new UserResource($user);
         return response()->json(['data' => $data, 'token' => $token, 'message' => 'User has been created successfully', 'status' => '201'],201);
+    }
+
+    public function verifyUser(Request $request, $id){
+        $code = $request->code;
+        $user = User::find($id);
+
+        $updated_at = Carbon::parse($user->updated_at)->addMinutes(5)->format('H:i');
+        $now = Carbon::now()->format('H:i');
+
+        if($now <= $updated_at) {
+            if ($code == $user->code) {
+                $user->is_verified = 1;
+                $user->code = null;
+                $user->save();
+
+                $data = new UserResource($user);
+                return response()->json(['data' => $data, 'message' => 'User has been verified successfully', 'status' => '200'], 200);
+
+            } else {
+                return response()->json(['message' => 'verification code doesn\'t match', 'status' => 400], 400);
+            }
+        } else {
+            $user->code = null;
+            $user->save();
+            return response()->json(['message' => 'verification code has Expired', 'status' => 400], 400);
+        }
+    }
+
+    public function resendVerification($id){
+        $user = User::find($id);
+        if($user != null) {
+            $this->getOtp($user);
+            return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
+        } else {
+            return response()->json(['message' => 'No user found', 'status' => 400], 400);
+        }
+    }
+
+    public function passwordResetRequest(Request $request){
+        $user = User::where('email', $request->email)->where('phone', $request->phone)->first();
+        if($user != null){
+            $this->getOtp($user);
+            return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
+        } else {
+            return response()->json(['message' => 'No user found', 'status' => 400], 400);
+        }
+    }
+
+    public function changePassword(Request $request, $id){
+        $code = $request->code;
+        $user = User::find($id);
+
+        $updated_at = Carbon::parse($user->updated_at)->addMinutes(3)->format('H:i');
+        $now = Carbon::now()->format('H:i');
+
+        if($now <= $updated_at) {
+            if ($code == $user->code) {
+                $user->password = bcrypt($request->new_password);
+                $user->code = null;
+                $user->save();
+
+                $data = new UserResource($user);
+                return response()->json(['data' => $data, 'message' => 'User password has been changed successfully', 'status' => '200'], 200);
+            } else {
+                return response()->json(['message' => 'verification code doesn\'t match', 'status' => 400], 400);
+            }
+        } else {
+            $user->code = null;
+            $user->save();
+            return response()->json(['message' => 'verification code has Expired', 'status' => 400], 400);
+        }
     }
 
     public function getAuthenticatedUser()

@@ -14,6 +14,10 @@ use Illuminate\Http\Request;
 */
 Route::post('regi', 'UserController@regi');
 Route::post('login', 'UserController@authenticate');
+Route::post('verify-user/{id}', 'UserController@verifyUser');
+Route::post('forgot-password', 'UserController@passwordResetRequest');
+Route::post('change-password/{id}', 'UserController@changePassword');
+Route::post('resend-code/{id}', 'UserController@resendVerification');
 
  Route::group(['middleware' => ['jwt.verify']], function() {
      Route::get('my-profile', 'UserController@getAuthenticatedUser');
