@@ -23,6 +23,8 @@ Route::post('login', 'UserController@authenticate');
      Route::get('my-inventory', 'InventoryController@myInventory');
      Route::post('remove-from-inventory', 'InventoryController@removeFromInventory');
      Route::get('my-notifications', 'NotificationController@myNotification');
+     Route::get('notification/{id}', 'NotificationController@readNotification');
+     Route::post('logout', 'UserController@logout');
  });
 
 
@@ -31,9 +33,7 @@ Route::post('login', 'UserController@authenticate');
      Route::put('profile-edit', 'UserController@update');
      Route::get('order-list', 'OrderController@orderList');
      Route::post('verify-order/{id}', 'OrderController@verifyOrder');
-     Route::get('dispatch-list', 'OrderController@readyForDispatch');
      Route::post('deliver-order/{id}', 'OrderController@orderDelivered');
-     Route::get('delivered-list', 'OrderController@deliveredList');
      Route::post('reject-order/{id}', 'OrderController@rejectOrder');
      Route::get('rejected-list', 'OrderController@rejectedList');
      Route::get('inventory-list', 'InventoryController@listInventory');

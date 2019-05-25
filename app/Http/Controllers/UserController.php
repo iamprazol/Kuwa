@@ -92,4 +92,16 @@ class UserController extends Controller
         return $this->responser($pending, $data, 'Customers Pending To Be Verified Listed Successfully');
     }
 
+    public function logout(Request $request)
+    {
+        try {
+            JWTAuth::invalidate($request->header('Authorization'));
+            return response()->json(['success' => true, 'message' => "You have successfully logged out."]);
+        } catch (JWTException $e) {
+            // something went wrong whilst attempting to encode the token
+            return response()->json(['success' => false, 'error' => 'Failed to logout, please try again.'], 500);
+        }
+    }
+
+
 }

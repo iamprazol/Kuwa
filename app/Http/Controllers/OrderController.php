@@ -17,7 +17,7 @@ class OrderController extends Controller
     public function myOrder()
     {
         $user_id = Auth::id();
-        $order = Order::where('user_id', $user_id)->latest()->first();
+        $order = Order::where('user_id', $user_id)->get();
 
         if ($order != null && $order->status != 2) {
             if ($order->status == 3) {
@@ -69,13 +69,20 @@ class OrderController extends Controller
             }
         }
 
-        $order = Order::create([
-            'user_id' => $user->id,
-            'address' => $user->address,
-            'quantity' => $r->quantity,
-            'delivery_date' => $delivery_date,
-            'delivery_time' => $delivery_time,
-        ]);
+        $order = Order::where('user_id', $user->id)->where('status', 0)->first();
+
+        if($order != null){
+            $order->quantity = $order->quantity + $r->quantity;
+            $order->save();
+        } else {
+            $order = Order::create([
+                'user_id' => $user->id,
+                'address' => $user->address,
+                'quantity' => $r->quantity,
+                'delivery_date' => $delivery_date,
+                'delivery_time' => $delivery_time,
+            ]);
+        }
 
         $title = 'Order Placed';
         $message = 'Your order has been recorded and is waiting for it to be verified by the admin';
@@ -87,7 +94,7 @@ class OrderController extends Controller
 
     public function orderList()
     {
-        $orders = Order::latest()->where('status', 0)->get();
+        $orders = Order::latest()->get();
         $data = OrderResource::collection($orders);
         return $this->responser($orders, $data, 'Latest Orders are listed');
     }
@@ -99,9 +106,12 @@ class OrderController extends Controller
             $remaining = $inventory->total - $inventory->sold;
             $order = Order::find($id);
             if ($order->quantity < $remaining) {
-                if ($order->status != 3) {
+                if ($order->status == 0) {
                     $order->status = 1;
                     $order->save();
+
+                    $inventory->sold = $inventory->sold + $order->quantity;
+                    $inventory->save();
 
                     $title = 'Order ready for dispatch';
                     $message = 'Your order has been verified by the admin and is one the way to be delivered';
@@ -110,7 +120,7 @@ class OrderController extends Controller
                     $data = new OrderResource($order);
                     return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
                 } else {
-                    return response()->json(['message' => 'Order has already been rejected', 'status' => 403], 403);
+                    return response()->json(['message' => 'Order has already been either verified or rejected', 'status' => 403], 403);
                 }
             } else {
                 return response()->json(['message' => 'You don\'t have enough item in the inventory to verify this order', 'status' => 403], 403);
@@ -120,17 +130,10 @@ class OrderController extends Controller
         }
     }
 
-    public function readyForDispatch()
-    {
-        $orders = Order::latest()->where('status', 1)->get();
-        $data = OrderResource::collection($orders);
-        return $this->responser($orders, $data, 'Orders ready to dispatched are listed');
-    }
-
     public function orderDelivered(Request $r, $id)
     {
         $order = Order::find($id);
-        if ($order->status != 3) {
+        if ($order->status == 1) {
             $order->status = 2;
             $order->save();
 
@@ -155,16 +158,11 @@ class OrderController extends Controller
             $data = new OrderResource($order);
             return $this->responser($order, $data, 'Order Has been successfully delivered to the customer');
 
+        } elseif($order->status == 2){
+            return response()->json(['message' => 'Order has already been delivered', 'status' => 403], 403);
         } else {
-            return response()->json(['message' => 'Order has already been rejected', 'status' => 403], 403);
+            return response()->json(['message' => 'Order has not been verified yet', 'status' => 403], 403);
         }
-    }
-
-    public function deliveredList()
-    {
-        $orders = Order::latest()->where('status', 2)->get();
-        $data = OrderResource::collection($orders);
-        return $this->responser($orders, $data, 'Orders delivered are listed');
     }
 
     public function rejectOrder(Request $r, $id)
