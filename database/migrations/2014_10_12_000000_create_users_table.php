@@ -20,7 +20,7 @@ class CreateUsersTable extends Migration
             $table->string('phone');
             $table->string('company_name');
             $table->string('address');
-            $table->string('password');
+            $table->string('password')->unique();
             $table->string('firebase_token', 512);
             $table->boolean('admin')->default(0);
             $table->string('code')->nullable();

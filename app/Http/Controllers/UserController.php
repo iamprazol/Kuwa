@@ -16,13 +16,13 @@ class UserController extends Controller
 {
     public function authenticate(Request $request)
     {
-        $credentials = $request->only('email', 'password');
-        $user = User::where('email', $request->email)->first();
+        $credentials = $request->only('phone', 'password');
+        $user = User::where('phone', $request->phone)->first();
             try {
                 if (!$token = JWTAuth::attempt($credentials)) {
                     return response()->json(['error' => 'invalid_credentials', 'status' => 400], 400);
                 } elseif ($user->is_verified == 0){
-                    return response()->json(['error' => 'User is not verified', 'status' => 400], 400);
+                    return response()->json(['error' => 'User is not verified', 'status' => 401], 401);
                 }
             } catch (JWTException $e) {
                 return response()->json(['error' => 'could_not_create_token', 'status' => 500 ], 500);
@@ -37,7 +37,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255|min:2',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
-            'phone' => 'required|regex:/^\+?(977)?(98)[0-9]{8}?/|max:14',
+            'phone' => 'required|regex:/^\+?(977)?(98)[0-9]{8}?/|max:14|unique:users',
             'firebase_token' => 'required'
         ]);
 
@@ -110,6 +110,13 @@ class UserController extends Controller
     public function changePassword(Request $request, $id){
         $code = $request->code;
         $user = User::find($id);
+        $validator = Validator::make($request->all(), [
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if($validator->fails()){
+            return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
+        }
 
         $updated_at = Carbon::parse($user->updated_at)->addMinutes(3)->format('H:i');
         $now = Carbon::now()->format('H:i');
@@ -146,7 +153,18 @@ class UserController extends Controller
     }
 
     public function update(Request $r){
-        $user = Auth::user();
+	 $validator = Validator::make($r->all(), [
+            'name' => 'string|max:255|min:2',
+            'email' => 'string|email|max:255|unique:users',
+            'password' => 'string|min:6|confirmed',
+            'phone' => 'regex:/^\+?(977)?(98)[0-9]{8}?/|max:14|unique:users',
+        ]);
+
+        if($validator->fails()){
+            return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
+        }    
+	
+	$user = Auth::user();
         $user->update($r->all());
 
         $data = new UserResource($user);

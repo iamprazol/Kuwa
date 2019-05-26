@@ -24,6 +24,7 @@ class OrderResource extends JsonResource
             'address' => $this->address,
             'delivery_date' => $this->delivery_date(),
             'delivery_time' => $this->delivery_time(),
+	    'company_name' => $this->user->company_name
             'status' => self::status()
         ];
     }
