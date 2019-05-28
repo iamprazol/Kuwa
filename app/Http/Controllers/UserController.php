@@ -16,13 +16,26 @@ class UserController extends Controller
 {
     public function authenticate(Request $request)
     {
-        $credentials = $request->only('phone', 'password');
-        $user = User::where('phone', $request->phone)->first();
+        $length = strlen($request->phone);
+        if(strpos($request->phone, '+977' ) !== false) {
+            $phone = substr($request->phone, 1);
+        } elseif(strpos($request->phone, '977') !== false) {
+            $phone = $request->phone;
+        } else {
+            if($length == 10) {
+                $phone = '977' . $request->phone;
+            } else {
+                return response()->json(['error' => 'Phone Number is invalid', 'status' => 400], 400);
+            }
+        }
+
+        $user = User::where('phone', $phone)->first();
             try {
-                if (!$token = JWTAuth::attempt($credentials)) {
+                if (!$token = JWTAuth::attempt(['phone' => $phone, 'password' => $request->password])) {
                     return response()->json(['error' => 'invalid_credentials', 'status' => 400], 400);
                 } elseif ($user->is_verified == 0){
-                    return response()->json(['error' => 'User is not verified', 'status' => 401], 401);
+                    $data = new UserResource($user);
+                    return response()->json(['data' => $data, 'error' => 'User is not verified', 'status' => 401], 401);
                 }
             } catch (JWTException $e) {
                 return response()->json(['error' => 'could_not_create_token', 'status' => 500 ], 500);
@@ -35,9 +48,9 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|min:2',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'string|email|max:255',
             'password' => 'required|string|min:6|confirmed',
-            'phone' => 'required|regex:/^\+?(977)?(98)[0-9]{8}?/|max:14|unique:users',
+            'phone' => 'required|regex:/^\+?(977)?(98)[0-9]{8}?/|max:14',
             'firebase_token' => 'required'
         ]);
 
@@ -45,16 +58,35 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
         }
 
-        $user = User::create([
-            'name' => $request->get('name'),
-            'email' => $request->get('email'),
-            'password' => Hash::make($request->get('password')),
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'company_name' => $request->company_name,
-            'firebase_token' => $request->firebase_token
-        ]);
-        $this->getOtp($user);
+        $length = strlen($request->phone);
+        if(strpos($request->phone, '+977' ) !== false) {
+            $phone = substr($request->phone, 1);
+        } elseif(strpos($request->phone, '977') !== false) {
+                $phone = $request->phone;
+        } else {
+            if($length == 10) {
+                $phone = '977' . $request->phone;
+            } else {
+                return response()->json(['error' => 'Phone Number is invalid', 'status' => 400], 400);
+            }
+        }
+        $unique = User::where('phone', $phone)->first();
+
+        if($unique == null){
+            $user = User::create([
+                'name' => $request->get('name'),
+                'email' => $request->get('email'),
+                'password' => Hash::make($request->get('password')),
+                'phone' => $phone,
+                'address' => $request->address,
+                'company_name' => $request->company_name,
+                'firebase_token' => $request->firebase_token
+            ]);
+        } else {
+            return response()->json(['error' => 'The phone number is already taken', 'status' => 400], 400);
+        }
+        $msg = 'This is your verification code for activating kuwa account';
+        $this->getOtp($user, $msg);
 
         $token = JWTAuth::fromUser($user);
         $data = new UserResource($user);
@@ -90,7 +122,8 @@ class UserController extends Controller
     public function resendVerification($id){
         $user = User::find($id);
         if($user != null) {
-            $this->getOtp($user);
+            $msg = 'This is your verification code';
+            $this->getOtp($user, $msg);
             return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
         } else {
             return response()->json(['message' => 'No user found', 'status' => 400], 400);
@@ -98,10 +131,34 @@ class UserController extends Controller
     }
 
     public function passwordResetRequest(Request $request){
-        $user = User::where('email', $request->email)->where('phone', $request->phone)->first();
+
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|regex:/^\+?(977)?(98)[0-9]{8}?/|max:14|unique:users',
+        ]);
+
+        if($validator->fails()){
+            return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
+        }
+
+        $length = strlen($request->phone);
+        if(strpos($request->phone, '+977' ) !== false) {
+            $phone = substr($request->phone, 1);
+        } elseif(strpos($request->phone, '977') !== false) {
+            $phone = $request->phone;
+        } else {
+            if($length == 10) {
+                $phone = '977' . $request->phone;
+            } else {
+                return response()->json(['error' => 'Phone Number is invalid', 'status' => 400], 400);
+            }
+        }
+
+        $user = User::where('phone', $phone)->first();
         if($user != null){
-            $this->getOtp($user);
-            return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
+            $msg = 'This is your verification code for changing password for kuwa account';
+            $this->getOtp($user, $msg);
+            $data = new UserResource($user);
+            return $this->responser($user, $data, 'A verification code has been sent to user');
         } else {
             return response()->json(['message' => 'No user found', 'status' => 400], 400);
         }

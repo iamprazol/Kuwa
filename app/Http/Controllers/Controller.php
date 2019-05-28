@@ -56,7 +56,7 @@ class Controller extends BaseController
         );
         $headers = array
         (
-            'Authorization: key= AAAAFAFMQ2o:APA91bGcXXPYFEay6P0UudTAqBVzcw0fPTuz3cw_gKC-r6wD2sTKahSIRKpOfV__vtbd-zcrFjyCMNQvhVc1rimAGeV-apJ-29jiujhMGxjmlNOlKQXzu8MTHCMdf_3QUVXBXt4h0phN',
+            'Authorization: key= AAAA5t3x4zE:APA91bFicTRE-ksshzhVLG0EOWL5Td2CACWYNkW8PQctvW3oWRYQNYImlZcdcEGVxpDBqgj3YLnQHpu8Sr7E-_mkWDrsHF8nIt_tfhQ62JvmPyD4Bl5uCEsHry3Ap_roGebVw7Efc5--',
             'Content-Type: application/json'
         );
         #Send Reponse To FireBase Server
@@ -88,14 +88,14 @@ class Controller extends BaseController
     }
 
 
-    public function getOtp($user){
+    public function getOtp($user, $msg){
         $code = rand(10000, 99999);
         $api_url = "http://api.sparrowsms.com/v2/sms/?".
             http_build_query(array(
                 'token' => 'W9mxiMTWaRQUiMf7YQJA',
                 'from'  => 'Demo',
                 'to'    => $user->phone,
-                'text'  => 'This is your verification code for activating kuwa account 
+                'text'  => $msg. ' 
                             Code: '.$code));
 
         $curl_handle=curl_init();
