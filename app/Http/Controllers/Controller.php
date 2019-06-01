@@ -41,24 +41,20 @@ class Controller extends BaseController
 
         $registrationIds = $devicetoken;
         #prep the bundle
-        $msg = array
-        (
-            "body" => $mesg,
-            "title" => $title,
-            "sound" => "mySound",
-
-        );
-        $fields = array
-        (
+        $msg = [
+            'body' => $mesg,
+            'title' => $title,
+            'sound'		=> true
+        ];
+        $fields = [
             'to' => $registrationIds,
             'notification' => $msg,
-            'priority' => 'high',
-        );
-        $headers = array
-        (
+        ];
+
+        $headers = [
             'Authorization: key= AAAA5t3x4zE:APA91bFicTRE-ksshzhVLG0EOWL5Td2CACWYNkW8PQctvW3oWRYQNYImlZcdcEGVxpDBqgj3YLnQHpu8Sr7E-_mkWDrsHF8nIt_tfhQ62JvmPyD4Bl5uCEsHry3Ap_roGebVw7Efc5--',
             'Content-Type: application/json'
-        );
+        ];
         #Send Reponse To FireBase Server
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
@@ -69,21 +65,18 @@ class Controller extends BaseController
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
         $result = curl_exec($ch);
         curl_close($ch);
-        $cur_message = json_decode($result);
-        if ($cur_message->success == 1)
-            return $result;
-        else
-            return $result;
+
+        return true;
     }
 
-    public function addNotification($item, $message, $title){
+    public function addNotification($user_id, $message, $title, $firebase_token){
         Notification::create([
-            'user_id' => $item->user_id,
+            'user_id' => $user_id,
             'message' => $message,
             'title' => $title,
         ]);
 
-        return $this->sendNotification($item->user->firebase_token, $message, $title);
+        return $this->sendNotification($firebase_token, $message, $title);
 
     }
 
@@ -95,8 +88,7 @@ class Controller extends BaseController
                 'token' => 'W9mxiMTWaRQUiMf7YQJA',
                 'from'  => 'Demo',
                 'to'    => $user->phone,
-                'text'  => $msg. ' 
-                            Code: '.$code));
+                'text'  => $msg.' Code: '.$code));
 
         $curl_handle=curl_init();
         curl_setopt($curl_handle, CURLOPT_URL,$api_url);

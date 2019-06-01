@@ -25,6 +25,7 @@ class CreateUsersTable extends Migration
             $table->boolean('admin')->default(0);
             $table->string('code')->nullable();
             $table->boolean('is_verified')->default(0);
+            $table->integer('resend_count')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });

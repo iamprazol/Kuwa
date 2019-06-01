@@ -24,7 +24,7 @@ class OrderResource extends JsonResource
             'address' => $this->address,
             'delivery_date' => $this->delivery_date(),
             'delivery_time' => $this->delivery_time(),
-	    'company_name' => $this->user->company_name
+	        'company_name' => $this->user->company_name,
             'status' => self::status()
         ];
     }
@@ -54,7 +54,7 @@ class OrderResource extends JsonResource
         if($this->delivery_time == null){
             return null;
         } else {
-            return Carbon::parse($this->delivery_time)->format('H:i');
+            return $this->delivery_time;
         }
     }
 

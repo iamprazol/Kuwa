@@ -10,7 +10,7 @@ use App\Http\Resources\NotificationResource;
 class NotificationController extends Controller
 {
     public function myNotification(){
-        $notifications = Auth::user()->notification->sortByDesc('created_at');
+        $notifications = Auth::user()->notification->sortByDesc('created_at')->take(50);
         $data = NotificationResource::collection($notifications);
         return $this->responser($notifications, $data, 'User\'s all notification listed successfully');
     }

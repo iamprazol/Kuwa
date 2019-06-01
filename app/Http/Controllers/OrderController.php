@@ -24,7 +24,7 @@ class OrderController extends Controller
                 return response()->json(['message' => 'Your order has been rejected', 'status' => '403'], 403);
             } else {
                 $data = new OrderResource($order);
-                return response()->json(['data' => $data, 'message' => 'Your Lastest Order is listed', 'status' => 200], 200);
+                return response()->json(['data' => $data, 'message' => 'Your Latest Order is listed', 'status' => 200], 200);
             }
         } else {
             return response()->json(['message' => 'Orders not found', 'status' => 200], 200);
@@ -39,6 +39,7 @@ class OrderController extends Controller
 
         $validator = Validator::make($r->all(), [
             'delivery_date' => 'date|after:yesterday|before:'.$untilweek,
+            'delivery_time' => 'string',
         ]);
 
         if ($validator->fails()) {
@@ -58,11 +59,11 @@ class OrderController extends Controller
             $delivery_date = null;
             if($now->format('H:i') <= Carbon::parse('5 pm')->format('H:i')) {
                 if ($r->delivery_time == "urgent") {
-                    $delivery_time = $now->addMinutes(30);
+                    $delivery_time = "Urgent";
                 } elseif ($r->delivery_time == "after_hour") {
-                    $delivery_time = Carbon::parse('1 pm')->format('H:i');
+                    $delivery_time = "After 1pm";
                 } elseif ($r->delivery_time == "after_hours") {
-                    $delivery_time = Carbon::parse('5 pm')->format('H:i');
+                    $delivery_time = "After 3pm";
                 }
             } else {
                 return response()->json(['message' => 'Ordering time for today is over. Please select tomorrow\'s date for delivery', 'status' => 403], 403);
@@ -86,7 +87,14 @@ class OrderController extends Controller
 
         $title = 'Order Placed';
         $message = 'Your order has been recorded and is waiting for it to be verified by the admin';
-        $this->addNotification($order, $message, $title);
+        $this->addNotification($order->user_id, $message, $title, $order->user->firebase_token);
+
+        $newmessage = 'A new Order has been placed';
+        $admins = User::where('admin', 1)->get();
+
+        foreach ($admins as $admin) {
+            $this->addNotification($admin->id, $newmessage, $title, $admin->firebase_token);
+        }
 
         $data = new OrderResource($order);
         return $this->responser($order, $data, 'Items Ordered Successfully');
@@ -115,7 +123,7 @@ class OrderController extends Controller
 
                     $title = 'Order ready for dispatch';
                     $message = 'Your order has been verified by the admin and is one the way to be delivered';
-                    $this->addNotification($order, $message, $title);
+                    $this->addNotification($order->user_id, $message, $title, $order->user->firebase_token);
 
                     $data = new OrderResource($order);
                     return $this->responser($order, $data, 'Order Has been successfully verified by the admin');
@@ -153,7 +161,7 @@ class OrderController extends Controller
 
             $title = 'Order Delivered';
             $message = 'Your order has been Delivered';
-            $this->addNotification($order, $message, $title);
+            $this->addNotification($order->user_id, $message, $title, $order->user->firebase_token);
 
             $data = new OrderResource($order);
             return $this->responser($order, $data, 'Order Has been successfully delivered to the customer');
@@ -169,16 +177,16 @@ class OrderController extends Controller
     {
         $order = Order::find($id);
         if($order) {
-            if ($order->status == 0) {
+            if ($order->status != 2) {
                 $order->status = 3;
                 $order->save();
 
                 $title = 'Order Rejected';
                 $message = 'Your order has been rejected. Please contact us for more details.';
-                $this->addNotification($order, $message, $title);
+                $this->addNotification($order->user_id, $message, $title, $order->user->firebase_token);
                 return response()->json(['message' => 'Order has been rejected Successfully', 'status' => '200'], 200);
             } else {
-                return response()->json(['message' => 'Order has been verified already and cannot be rejected', 'status' => '403'], 403);
+                return response()->json(['message' => 'Order has been already delivered', 'status' => '403'], 403);
             }
         } else {
                 return response()->json(['message' => 'No Order found', 'status' => 400], 400);

@@ -122,9 +122,27 @@ class UserController extends Controller
     public function resendVerification($id){
         $user = User::find($id);
         if($user != null) {
-            $msg = 'This is your verification code';
-            $this->getOtp($user, $msg);
-            return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
+            $now = Carbon::now();
+            $untilresend = Carbon::parse($user->updated_at)->addHours(12);
+            if ($user->resend_count > 2 ) {
+                if ($now > $untilresend) {
+                    $user->resend_count = 0;
+                    $user->save();
+                    $msg = 'This is your verification';
+                    $this->getOtp($user, $msg);
+                    $user->resend_count = $user->resend_count + 1;
+                    $user->save();
+                    return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
+                } else {
+                    return response()->json(['message' => 'You have exceeded your limit of resending code request wait until 12 hours', 'status' => 400], 400);
+                }
+            } else {
+                    $msg = 'This is your verification code';
+                    $this->getOtp($user, $msg);
+                    $user->resend_count = $user->resend_count + 1;
+                    $user->save();
+                    return response()->json(['message' => 'A verification code has been sent to user', 'status' => 200], 200);
+            }
         } else {
             return response()->json(['message' => 'No user found', 'status' => 400], 400);
         }

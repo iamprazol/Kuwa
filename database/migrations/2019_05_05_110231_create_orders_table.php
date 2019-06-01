@@ -19,7 +19,7 @@ class CreateOrdersTable extends Migration
             $table->string('address');
             $table->string('quantity');
             $table->date('delivery_date')->nullable();
-            $table->time('delivery_time')->nullable();
+            $table->string('delivery_time')->nullable();
             $table->boolean('status')->default(0);
             $table->timestamps();
         });
