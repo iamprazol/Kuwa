@@ -19,7 +19,7 @@ Route::post('forgot-password', 'UserController@passwordResetRequest');
 Route::post('change-password/{id}', 'UserController@changePassword');
 Route::post('resend-code/{id}', 'UserController@resendVerification');
 
- Route::group(['middleware' => ['jwt.verify']], function() {
+ Route::group(['middleware' => ['jwt.verify', 'verifyuser']], function() {
      Route::get('my-profile', 'UserController@getAuthenticatedUser');
      Route::put('profile-edit', 'UserController@update');
      Route::post('order', 'OrderController@placeOrder');
@@ -32,7 +32,7 @@ Route::post('resend-code/{id}', 'UserController@resendVerification');
  });
 
 
- Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group( function () {
+ Route::middleware(['jwt.verify','verifyuser', 'admin'])->prefix('admin')->group( function () {
      Route::get('my-profile', 'UserController@getAuthenticatedUser');
      Route::put('profile-edit', 'UserController@update');
      Route::get('order-list', 'OrderController@orderList');

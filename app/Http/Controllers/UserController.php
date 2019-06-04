@@ -106,8 +106,9 @@ class UserController extends Controller
                 $user->code = null;
                 $user->save();
 
+                $token = JWTAuth::fromUser($user);
                 $data = new UserResource($user);
-                return response()->json(['data' => $data, 'message' => 'User has been verified successfully', 'status' => '200'], 200);
+                return response()->json(['data' => $data, 'token' => $token, 'message' => 'User has been verified successfully', 'status' => '200'], 200);
 
             } else {
                 return response()->json(['message' => 'verification code doesn\'t match', 'status' => 400], 400);
