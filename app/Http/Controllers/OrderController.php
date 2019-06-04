@@ -38,39 +38,38 @@ class OrderController extends Controller
         $untilweek = Carbon::now()->addWeek();
 
         $validator = Validator::make($r->all(), [
+            'quantity' => 'integer',
             'delivery_date' => 'date|after:yesterday|before:'.$untilweek,
-            'delivery_time' => 'string',
+            'delivery_time' => 'string'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
         }
 
-        $today = Carbon::now()->today()->toDateString();
+        $today = Carbon::now()->today();
+        $days = Carbon::parse($r->delivery_date)->diffInDays($today);
 
         if(isset($r->delivery_date)){
-            if($r->delivery_date > $today){
+            if($days > 0){
                 $delivery_date = $r->delivery_date;
                 $delivery_time = null;
-            } else {
-                return response()->json(['message' => 'You have to choose a time for delivery at current date', 'status' => 403], 403);
+            } elseif($days == 0) {
+                $delivery_date = null;
+                if($now->format('H:i') <= Carbon::parse('5 pm')->format('H:i')){
+                    $delivery_time = $r->delivery_time;
+                } else {
+                    return response()->json(['message' => 'Ordering time for today is over. Please select tomorrow\'s date for delivery', 'status' => 403], 403);
+
+                }
             }
         } else {
-            $delivery_date = null;
-            if($now->format('H:i') <= Carbon::parse('5 pm')->format('H:i')) {
-                if ($r->delivery_time == "urgent") {
-                    $delivery_time = "Urgent";
-                } elseif ($r->delivery_time == "after_hour") {
-                    $delivery_time = "After 1pm";
-                } elseif ($r->delivery_time == "after_hours") {
-                    $delivery_time = "After 3pm";
-                }
-            } else {
-                return response()->json(['message' => 'Ordering time for today is over. Please select tomorrow\'s date for delivery', 'status' => 403], 403);
-            }
+            return response()->json(['message' => 'Please select a delivery date', 'status' => 403], 403);
         }
 
-        $order = Order::where('user_id', $user->id)->where('status', 0)->first();
+
+        $order = Order::where('user_id', $user->id)->where('status', 0)->where('delivery_date', $delivery_date)->first();
+
 
         if($order != null){
             $order->quantity = $order->quantity + $r->quantity;
