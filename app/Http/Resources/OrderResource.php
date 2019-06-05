@@ -19,12 +19,12 @@ class OrderResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'user_name' => $this->user->name,
+            'user_name' => $this->user['name'],
             'quantity' => $this->quantity,
             'address' => $this->address,
             'delivery_date' => $this->delivery_date(),
             'delivery_time' => $this->delivery_time(),
-	        'company_name' => $this->user->company_name,
+	        'company_name' => $this->user['company_name'],
             'status' => self::status()
         ];
     }

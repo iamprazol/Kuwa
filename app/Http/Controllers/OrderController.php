@@ -101,7 +101,7 @@ class OrderController extends Controller
 
     public function orderList()
     {
-        $orders = Order::latest()->get();
+        $orders = Order::with('user')->latest()->get();
         $data = OrderResource::collection($orders);
         return $this->responser($orders, $data, 'Latest Orders are listed');
     }
