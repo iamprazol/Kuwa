@@ -38,7 +38,7 @@ class OrderController extends Controller
         $untilweek = Carbon::now()->addWeek();
 
         $validator = Validator::make($r->all(), [
-            'quantity' => 'integer',
+            'quantity' => 'integer|min:0',
             'delivery_date' => 'date|after:yesterday|before:'.$untilweek,
             'delivery_time' => 'string'
         ]);

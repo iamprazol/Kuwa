@@ -7,6 +7,8 @@ use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\InventoryResource as InventoryResource;
+use Illuminate\Support\Facades\Validator;
+
 
 class InventoryController extends Controller
 {
@@ -43,7 +45,7 @@ class InventoryController extends Controller
     }
 
     public function listInventory(){
-        $users = User::orderBy('name', 'asc')->get();
+        $users = User::orderBy('name', 'asc')->where('admin',0)->get();
         foreach ($users as $user){
             $inventory = Inventory::where('user_id', $user->id)->first();
             if($inventory != null){
@@ -73,6 +75,14 @@ class InventoryController extends Controller
     }
 
     public function adminInventory(Request $r){
+        $validator = Validator::make($r->all(), [
+            'quantity' => 'integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors(), 'status' => 400], 400);
+        }
+
         $inventory = Auth::user()->inventory()->first();
         if (!$inventory) {
             $inventory = Inventory::create([
