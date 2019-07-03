@@ -49,3 +49,4 @@ Route::post('resend-code/{id}', 'UserController@resendVerification');
      Route::post('remove-from-inventory', 'InventoryController@removeFromInventory');
 
  });
+Route::get('sales-report', 'OrderController@salesReport');

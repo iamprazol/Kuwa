@@ -198,4 +198,57 @@ class OrderController extends Controller
         return $this->responser($orders, $data, 'Rejected Orders are listed');
     }
 
+    public function salesReport(){
+        $yesterday = Carbon::yesterday()->toDateString();
+        $today = Carbon::today()->toDateString();
+
+        $admins = User::where('admin', 1)->get();
+        foreach ($admins as $admin){
+            $ids[] = $admin->id;
+        }
+
+        $totalSalesInTwoDays = Order::where('updated_at', '>=', $yesterday)->where('status' ,2)->get();
+        $twoDaysSales = 0;
+        foreach ($totalSalesInTwoDays as $two){
+            $twoDaysSales  += $two->quantity;
+        }
+
+        $totalSalesYesterday = Order::where('updated_at', 'like', '%'.$yesterday.'%')->where('status', 2)->get();
+        $yesterdaySales = 0;
+        $yesterdayLog = [];
+        foreach ($totalSalesYesterday as $two){
+            $yesterdaySales  += $two->quantity;
+            $yesterdayLog[] = [
+                'user_name' => $two->user->name,
+                'jars_sold' => $two->quantity
+            ];
+        }
+
+        $totalSalesToday = Order::where('updated_at', 'like', '%'.$today.'%')->where('status' ,2)->get();
+        $todaySales = 0;
+        $todayLog = [];
+        foreach ($totalSalesToday as $two){
+            $todaySales  += $two->quantity;
+            $todayLog[] = [
+                'user_name' => $two->user->name,
+                'jars_sold' => $two->quantity
+            ];
+        }
+
+        $data = [
+            'total_sales_in_2_days' => $twoDaysSales,
+            'total_sales_today_upto_now' => $todaySales,
+            'today_log' => array_filter($todayLog),
+            'total_sales_yesterday' => $yesterdaySales,
+            'yesterday_log' => array_filter($yesterdayLog)
+        ];
+
+        if($data != null){
+            return response()->json(['data' => $data, 'message' => 'Report is Listed', 'status' => 200], 200);
+        } else {
+            return response()->json(['message' => 'Report not found', 'status' => 404], 404);
+        }
+
+    }
+
 }
