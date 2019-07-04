@@ -231,6 +231,8 @@ class OrderController extends Controller
             $todaySales  += $two->quantity;
             $todayLog[] = [
                 'user_name' => $two->user->name,
+                'phone' => $two->user->phone,
+                'address' => $two->user->address,
                 'jars_sold' => $two->quantity
             ];
         }

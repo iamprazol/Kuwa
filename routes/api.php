@@ -47,6 +47,6 @@ Route::post('resend-code/{id}', 'UserController@resendVerification');
      Route::post('add-items', 'InventoryController@adminInventory');
      Route::get('my-inventory', 'InventoryController@myInventory');
      Route::post('remove-from-inventory', 'InventoryController@removeFromInventory');
+     Route::get('sales-report', 'OrderController@salesReport');
 
  });
-Route::get('sales-report', 'OrderController@salesReport');
